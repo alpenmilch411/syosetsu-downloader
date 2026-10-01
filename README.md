@@ -9,14 +9,12 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/python-%E2%89%A53.12-3776AB?logo=python&logoColor=white" alt="python >=3.12">
-  <img src="https://img.shields.io/badge/uv-managed-DE5FE9?logo=uv&logoColor=white" alt="uv">
-  <img src="https://img.shields.io/badge/http-httpx-1F62D6" alt="httpx">
-  <img src="https://img.shields.io/badge/parser-selectolax-1F62D6" alt="selectolax">
-  <img src="https://img.shields.io/badge/covers-Pillow-1F62D6" alt="Pillow">
-  <img src="https://img.shields.io/badge/output-TXT%20%7C%20EPUB3-B7410E" alt="output: TXT | EPUB3">
-  <img src="https://img.shields.io/badge/tests-pytest-0A9EDC?logo=pytest&logoColor=white" alt="pytest">
-  <img src="https://img.shields.io/badge/license-MIT-3FB950" alt="license: MIT">
+  <img src="https://img.shields.io/badge/python-%233670A0.svg?style=for-the-badge&logo=python&logoColor=ffdd54" alt="Python">
+  <img src="https://img.shields.io/badge/uv-%23DE5FE9.svg?style=for-the-badge&logo=uv&logoColor=white" alt="uv">
+  <img src="https://img.shields.io/badge/pytest-%23ffffff.svg?style=for-the-badge&logo=pytest&logoColor=2f9fe3" alt="Pytest">
+  <img src="https://img.shields.io/badge/mac%20os-%23000000.svg?style=for-the-badge&logo=macos&logoColor=F0F0F0&logoSize=auto" alt="macOS">
+  <img src="https://img.shields.io/badge/Linux-%23FCC624.svg?style=for-the-badge&logo=linux&logoColor=black" alt="Linux">
+  <img src="https://img.shields.io/github/license/alpenmilch411/syosetsu-downloader?style=for-the-badge" alt="License">
 </p>
 
 `syosetsu` is a small command-line tool for [小説家になろう](https://syosetu.com/) (`ncode.syosetu.com`). It downloads a novel chapter by chapter into a local store, and exports it as:
