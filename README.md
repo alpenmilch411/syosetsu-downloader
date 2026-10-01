@@ -12,8 +12,6 @@
   <img src="https://img.shields.io/badge/python-%233670A0.svg?style=for-the-badge&logo=python&logoColor=ffdd54" alt="Python">
   <img src="https://img.shields.io/badge/uv-%23DE5FE9.svg?style=for-the-badge&logo=uv&logoColor=white" alt="uv">
   <img src="https://img.shields.io/badge/pytest-%23ffffff.svg?style=for-the-badge&logo=pytest&logoColor=2f9fe3" alt="Pytest">
-  <img src="https://img.shields.io/badge/mac%20os-%23000000.svg?style=for-the-badge&logo=macos&logoColor=F0F0F0&logoSize=auto" alt="macOS">
-  <img src="https://img.shields.io/badge/Linux-%23FCC624.svg?style=for-the-badge&logo=linux&logoColor=black" alt="Linux">
   <img src="https://img.shields.io/github/license/alpenmilch411/syosetsu-downloader?style=for-the-badge" alt="License">
 </p>
 
@@ -113,6 +111,21 @@ data/<ncode>/
 | `gloss` | everything else: katakana or creative readings (`魔法《マジック》`), Latin text, … |
 
 Authors use furigana freely, so `reading` means "looks like a reading", not "verified reading" — a creative reading written in hiragana still lands there.
+
+### EPUB layout: horizontal or vertical
+
+EPUBs are **horizontal** by default (left-to-right, like a western book). Add `--vertical` for traditional Japanese **縦書き** (top-to-bottom, right-to-left page turns):
+
+```bash
+uv run syosetsu get n9669bk --epub               # horizontal (default)
+uv run syosetsu get n9669bk --epub --vertical    # vertical 縦書き
+
+# switch an already downloaded novel — no re-download needed
+uv run syosetsu export epub n9669bk --vertical
+uv run syosetsu export epub n9669bk --vertical --out ~/Books/mushoku-tate.epub
+```
+
+Both layouts render furigana as real `<ruby>`; in vertical mode two-digit numbers are set upright (縦中横).
 
 ### Covers
 
