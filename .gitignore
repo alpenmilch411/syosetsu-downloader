@@ -1,0 +1,8 @@
+# downloaded novels and exports — never commit
+data/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
