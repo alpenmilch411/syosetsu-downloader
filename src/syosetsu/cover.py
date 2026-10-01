@@ -7,36 +7,74 @@ from pathlib import Path
 
 from PIL import Image, ImageChops, ImageDraw, ImageFont
 
+from .fonts import FontSpec, find_system_font
+
 W, H = 1600, 2560
-FONT_CANDIDATES = [
-    "/System/Library/Fonts/ヒラギノ明朝 ProN.ttc",
-    "/System/Library/Fonts/Hiragino Mincho ProN.ttc",
-    "/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc",
-]
 PALETTE = {  # biggenre → (background, accent)
     1: ((122, 42, 58), (236, 200, 170)), 2: ((28, 52, 92), (226, 196, 120)),
     3: ((44, 70, 58), (222, 214, 180)), 4: ((24, 30, 44), (150, 210, 230)),
     99: ((70, 60, 52), (230, 210, 170)), 98: ((60, 60, 64), (220, 220, 210)),
 }
+PRESETS = {
+    "indigo": (28, 52, 92), "rose": (122, 42, 58), "forest": (44, 70, 58), "night": (24, 30, 44),
+    "sepia": (222, 203, 164), "charcoal": (52, 52, 56), "cream": (243, 236, 220),
+}
+PATTERNS = ("waves", "none")
+LIGHT_TEXT, DARK_TEXT = (250, 246, 236), (38, 30, 26)
+GOLD, BROWN = (226, 196, 120), (120, 82, 36)
 VERT = str.maketrans({"「": "﹁", "」": "﹂", "『": "﹃", "』": "﹄", "（": "︵", "）": "︶", "(": "︵", ")": "︶",
                       "ー": "丨", "－": "丨", "—": "丨", "…": "︙", "〜": "丨", "～": "丨", "【": "︻", "】": "︼",
                       "〈": "︿", "〉": "﹀", "《": "︽", "》": "︾", "!": "！", "?": "？"})
 PHRASE_RE = re.compile(r"[^、。]*[、。]|[^、。]+$")
 
 
-def find_font() -> str | None:
-    env = os.environ.get("SYOSETSU_COVER_FONT")
-    for p in ([env] if env else []) + FONT_CANDIDATES:
-        if p and Path(p).exists():
-            return p
-    return None
+find_font = find_system_font
 
 
-def _font(path: str, size: int, bold: bool) -> ImageFont.FreeTypeFont:
-    try:
-        return ImageFont.truetype(path, size, index=1 if bold else 0)
+def _luminance(c) -> float:
+    ch = [x / 255 for x in c]
+    ch = [x / 12.92 if x <= 0.03928 else ((x + 0.055) / 1.055) ** 2.4 for x in ch]
+    return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2]
+
+
+def _contrast(a, b) -> float:
+    hi, lo = sorted((_luminance(a), _luminance(b)), reverse=True)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def resolve_palette(color: str, biggenre: int, ncode: str) -> tuple[tuple, tuple, tuple]:
+    """→ (background, accent, text). 'auto' tints by genre; presets and #RRGGBB are accepted.
+    Text and accent colours are chosen so they stay readable on the background."""
+    preferred_accent = GOLD
+    if color == "auto":
+        bg, preferred_accent = PALETTE.get(biggenre, PALETTE[99])
+        shift = int(hashlib.sha1(ncode.encode()).hexdigest(), 16) % 21 - 10
+        bg = tuple(max(0, min(255, c + shift)) for c in bg)
+    elif color in PRESETS:
+        bg = PRESETS[color]
+    elif re.fullmatch(r"#[0-9a-fA-F]{6}", color):
+        bg = tuple(int(color[i:i + 2], 16) for i in (1, 3, 5))
+    else:
+        raise ValueError(f"invalid cover color {color!r}: use auto, {', '.join(PRESETS)} or #RRGGBB")
+    text = max((LIGHT_TEXT, DARK_TEXT), key=lambda t: _contrast(bg, t))
+    accent = next((a for a in (preferred_accent, GOLD, BROWN) if _contrast(bg, a) >= 3.0), text)
+    return bg, accent, text
+
+
+def _font(font: FontSpec, size: int, bold: bool) -> ImageFont.FreeTypeFont:
+    if font.variable:
+        f = ImageFont.truetype(font.regular, size)
+        try:
+            f.set_variation_by_name("Bold" if bold else "Regular")
+        except (OSError, ValueError):
+            pass
+        return f
+    if font.regular != font.bold:
+        return ImageFont.truetype(font.bold if bold else font.regular, size)
+    try:  # one collection file (e.g. Hiragino .ttc): index 1 is the heavier weight
+        return ImageFont.truetype(font.regular, size, index=1 if bold else 0)
     except OSError:
-        return ImageFont.truetype(path, size)
+        return ImageFont.truetype(font.regular, size)
 
 
 def split_title(title: str) -> tuple[str, str]:
@@ -97,20 +135,25 @@ def _draw_vertical(d, text, font, x_right, y_top, rows, fill, stroke=0, stroke_f
     return len(columns(text, rows))
 
 
-def render_cover(title, author, ncode, biggenre=2, art_path=None, font_path=None) -> Image.Image:
-    font_path = font_path or find_font()
-    if font_path is None:
-        raise RuntimeError("no CJK font found (set SYOSETSU_COVER_FONT)")
-    bg, accent = PALETTE.get(biggenre, PALETTE[99])
+def render_cover(title, author, ncode, biggenre=2, art_path=None, font_path=None,
+                 color="auto", pattern="waves", font: FontSpec | None = None) -> Image.Image:
+    if pattern not in PATTERNS:
+        raise ValueError(f"invalid cover pattern {pattern!r}: use {' or '.join(PATTERNS)}")
+    bg, accent, text = resolve_palette(color, biggenre, ncode)
+    if font is None:
+        path = font_path or find_font()
+        if path is None:
+            raise RuntimeError("no CJK font found (set SYOSETSU_COVER_FONT)")
+        font = FontSpec(path, path, False)
     main, sub = split_title(title)
     if art_path and Path(art_path).exists():
-        return _art_cover(main, sub, author, accent, Path(art_path), font_path)
-    shift = int(hashlib.sha1(ncode.encode()).hexdigest(), 16) % 21 - 10
-    bg = tuple(max(0, min(255, c + shift)) for c in bg)
+        art_accent = accent if _contrast(accent, (10, 12, 22)) >= 3.0 else GOLD
+        return _art_cover(main, sub, author, art_accent, Path(art_path), font)
     img = Image.new("RGB", (W, H), bg)
     d = ImageDraw.Draw(img)
-    faint = tuple(min(255, c + 14) for c in bg)
-    for row in range(14):                      # faint 青海波 waves in the lower part
+    step = -14 if text == DARK_TEXT else 14
+    faint = tuple(max(0, min(255, c + step)) for c in bg)
+    for row in range(14 if pattern == "waves" else 0):                      # faint 青海波 waves in the lower part
         y = H - 120 - row * 60
         if y < H * 0.62:
             break
@@ -120,15 +163,15 @@ def render_cover(title, author, ncode, biggenre=2, art_path=None, font_path=None
     d.rectangle((70, 70, W - 70, H - 70), outline=accent, width=6)
     d.rectangle((95, 95, W - 95, H - 95), outline=accent, width=2)
     size, rows = fit(main, W - 420, H * 0.72, 220)
-    n_main = _draw_vertical(d, main, _font(font_path, size, True), W - 190, 200, rows, (250, 246, 236))
+    n_main = _draw_vertical(d, main, _font(font, size, True), W - 190, 200, rows, text)
     if sub:
         s_size, s_rows = fit(sub, W - 420 - n_main * size * 1.25 - 40, H * 0.72, 96)
-        _draw_vertical(d, sub, _font(font_path, s_size, False), W - 190 - n_main * size * 1.25 - 50, 240, s_rows, accent)
-    _draw_vertical(d, author, _font(font_path, 80, True), 330, H - 200 - min(len(author), 12) * 84, 12, accent)
+        _draw_vertical(d, sub, _font(font, s_size, False), W - 190 - n_main * size * 1.25 - 50, 240, s_rows, accent)
+    _draw_vertical(d, author, _font(font, 80, True), 330, H - 200 - min(len(author), 12) * 84, 12, accent)
     return img
 
 
-def _art_cover(main, sub, author, accent, art_path, font_path) -> Image.Image:
+def _art_cover(main, sub, author, accent, art_path, font: FontSpec) -> Image.Image:
     src = Image.open(art_path).convert("RGB")
     scale = max(W / src.width, H / src.height)
     src = src.resize((round(src.width * scale), round(src.height * scale)), Image.LANCZOS)
@@ -147,13 +190,13 @@ def _art_cover(main, sub, author, accent, art_path, font_path) -> Image.Image:
     d.rectangle((60, 60, W - 60, H - 60), outline=accent, width=4)
     shadow = (8, 10, 20)
     size, rows = fit(main, W * 0.42, H * 0.62, 190)
-    n_main = _draw_vertical(d, main, _font(font_path, size, True), W - 150, 170, rows, (252, 248, 238),
+    n_main = _draw_vertical(d, main, _font(font, size, True), W - 150, 170, rows, (252, 248, 238),
                             stroke=max(3, size // 22), stroke_fill=shadow)
     if sub:
         s_size, s_rows = fit(sub, W * 0.16, H * 0.62, 70)
-        _draw_vertical(d, sub, _font(font_path, s_size, False), W - 150 - n_main * size * 1.25 - 30, 200, s_rows,
+        _draw_vertical(d, sub, _font(font, s_size, False), W - 150 - n_main * size * 1.25 - 30, 200, s_rows,
                        accent, stroke=3, stroke_fill=shadow)
-    _draw_vertical(d, author, _font(font_path, 72, True), 260, H - 170 - min(len(author), 12) * 76, 12, accent,
+    _draw_vertical(d, author, _font(font, 72, True), 260, H - 170 - min(len(author), 12) * 76, 12, accent,
                    stroke=3, stroke_fill=shadow)
     return img
 

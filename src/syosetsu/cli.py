@@ -6,12 +6,24 @@ from pathlib import Path
 
 from . import api
 from .client import Client, FetchError
+from .cover import PATTERNS, PRESETS
 from .epub import build_epub
 from .export_txt import export_txt
 from .fetch import fetch_novel
+from .fonts import FONTS
 from .parse import LayoutError
 from .rank import GENRES, rank, read_list, write_list
 from .store import Store
+
+
+def _cover_args(p) -> None:
+    p.add_argument("--cover-font", help=f"{', '.join(FONTS)} or a font file path (default: mincho)")
+    p.add_argument("--cover-color", default="auto", help=f"auto, {', '.join(PRESETS)} or #RRGGBB (default: auto = by genre)")
+    p.add_argument("--cover-pattern", default="waves", choices=PATTERNS)
+
+
+def _cover_opts(args) -> dict:
+    return {"cover_font": args.cover_font, "cover_color": args.cover_color, "cover_pattern": args.cover_pattern}
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -35,14 +47,16 @@ def _parser() -> argparse.ArgumentParser:
     et.add_argument("--with-notes", action="store_true")
     ee = esub.add_parser("epub")
     ee.add_argument("ncode")
-    ee.add_argument("--vertical", action="store_true")
-    ee.add_argument("--with-notes", action="store_true")
-    ee.add_argument("--out")
+    ee.add_argument("--vertical", action="store_true", help="vertical 縦書き layout (default: horizontal)")
+    ee.add_argument("--with-notes", action="store_true", help="include author prefaces/afterwords")
+    ee.add_argument("--out", help="output path (default: data/<ncode>/<title>.epub)")
+    _cover_args(ee)
 
     g = sub.add_parser("get", help="fetch + optionally build the EPUB")
     g.add_argument("target")
     g.add_argument("--epub", action="store_true")
-    g.add_argument("--vertical", action="store_true")
+    g.add_argument("--vertical", action="store_true", help="vertical 縦書き layout (default: horizontal)")
+    _cover_args(g)
     g.add_argument("--interval", type=float, default=1.5, help="seconds between requests (default 1.5)")
 
     sub.add_parser("list", help="show downloaded novels")
@@ -101,14 +115,15 @@ def main(argv=None) -> int:
                 n, r = export_txt(store, ncode, with_notes=args.with_notes)
                 print(f"{n} chapters, {r} ruby records → {store.novel_dir(ncode)}")
             else:
-                print(build_epub(store, ncode, out=args.out, vertical=args.vertical, with_notes=args.with_notes))
+                print(build_epub(store, ncode, out=args.out, vertical=args.vertical, with_notes=args.with_notes,
+                                 **_cover_opts(args)))
             return 0
         if args.cmd == "get":
             ncode = api.normalize_ncode(args.target)
             res = fetch_novel(_client(args.interval), store, ncode)
             print(f"{res.title}: {res.fetched} fetched, {res.skipped} already present")
             if args.epub:
-                print(build_epub(store, ncode, vertical=args.vertical))
+                print(build_epub(store, ncode, vertical=args.vertical, **_cover_opts(args)))
             return 0
         if args.cmd == "list":
             for ncode in store.novels():

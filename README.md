@@ -31,7 +31,8 @@ It is deliberately **polite**: one request at a time, a pause between requests, 
 - Resumable and incremental — only missing chapters are fetched; `--refresh` re-fetches chapters the author revised (改稿)
 - Arc / volume headings (章) are kept and become the EPUB's table of contents
 - Furigana preserved losslessly as `｜漢字《かんじ》`, plus a JSONL file with every reading and its exact position in the plain text
-- EPUB 3 with horizontal (default) or vertical 縦書き layout, JPEG cover with a vertical Mincho title, nav + NCX table of contents
+- EPUB 3 with horizontal (default) or vertical 縦書き layout, nav + NCX table of contents
+- Generated covers with a choice of six open-licensed Japanese fonts, colour presets or any hex colour, and an optional pattern
 - Ranking lists: build a download list of the top novels per genre from the official API, then fetch the whole list in one resumable run
 - Atomic writes — an interrupted run never leaves a half-written chapter
 
@@ -129,7 +130,38 @@ Both layouts render furigana as real `<ruby>`; in vertical mode two-digit number
 
 ### Covers
 
-Every EPUB gets a cover: the title set vertically in Mincho over a genre-tinted background. To use your own illustration, put a portrait image at `data/<ncode>/art.png` and export again — the title is laid over it. The cover font is found automatically on macOS (Hiragino Mincho) and Linux (Noto Serif CJK); set `SYOSETSU_COVER_FONT=/path/to/font` to use another one.
+Every EPUB gets a cover: the title set vertically over a plain colour, with an optional wave (青海波) pattern.
+
+<p align="center">
+  <img src="assets/cover-variants.jpg" width="860" alt="Cover variants: mincho/auto, maru/cream, decol/rose without pattern, gothic/night">
+</p>
+
+```bash
+uv run syosetsu export epub n9669bk --cover-font maru --cover-color cream
+uv run syosetsu export epub n9669bk --cover-font decol --cover-color rose --cover-pattern none
+uv run syosetsu get n9669bk --epub --cover-color "#3A2E5C"
+```
+
+| Option | Values | Default |
+|:---|:---|:---|
+| `--cover-font` | `mincho`, `gothic`, `shippori`, `oldmincho`, `maru`, `decol`, or a path to your own `.ttf`/`.otf`/`.ttc` | `mincho` |
+| `--cover-color` | `auto` (by genre), `indigo`, `rose`, `forest`, `night`, `sepia`, `charcoal`, `cream`, or `#RRGGBB` | `auto` |
+| `--cover-pattern` | `waves`, `none` | `waves` |
+
+Text colours are picked automatically so the title stays readable — light text on dark backgrounds, dark text on light ones.
+
+| Font name | Font | Style |
+|:---|:---|:---|
+| `mincho` | [Noto Serif JP](https://fonts.google.com/noto/specimen/Noto+Serif+JP) | classic book Mincho |
+| `gothic` | [Noto Sans JP](https://fonts.google.com/noto/specimen/Noto+Sans+JP) | clean sans-serif |
+| `shippori` | [Shippori Mincho](https://fonts.google.com/specimen/Shippori+Mincho) | elegant, literary |
+| `oldmincho` | [Zen Old Mincho](https://fonts.google.com/specimen/Zen+Old+Mincho) | traditional |
+| `maru` | [Zen Maru Gothic](https://fonts.google.com/specimen/Zen+Maru+Gothic) | rounded, friendly |
+| `decol` | [Kaisei Decol](https://fonts.google.com/specimen/Kaisei+Decol) | decorative |
+
+All fonts are free under the [SIL Open Font License](https://openfontlicense.org). They are **not** bundled: each one is downloaded once (3–14 MB) from the [Google Fonts repository](https://github.com/google/fonts) on first use and cached, together with its license file, in your user cache folder (`~/Library/Caches/syosetsu` on macOS, `~/.cache/syosetsu` on Linux, `%LOCALAPPDATA%\syosetsu` on Windows; override with `SYOSETSU_CACHE_DIR`). Offline, the tool falls back to an installed Japanese system font (Hiragino, Noto CJK, Yu Mincho / MS Mincho, or `SYOSETSU_COVER_FONT`); with no font at all the EPUB is built without a cover.
+
+**Your own illustration:** put a portrait image at `data/<ncode>/art.png` and export again — it fills the cover and the title is laid over it with a soft shadow.
 
 ## Development
 

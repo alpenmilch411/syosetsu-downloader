@@ -8,7 +8,7 @@ from datetime import date
 from pathlib import Path
 from xml.sax.saxutils import escape, quoteattr
 
-from . import aozora, cover
+from . import aozora, cover, fonts
 from .export_txt import chapter_lines
 from .store import Store
 
@@ -65,19 +65,24 @@ def _ncx(uid: str, title: str, nav: list[dict]) -> str:
             f"<docTitle><text>{escape(title)}</text></docTitle><navMap>{points}</navMap></ncx>")
 
 
-def build_epub(store: Store, ncode: str, out=None, vertical=False, with_notes=False, today=None) -> Path:
+def build_epub(store: Store, ncode: str, out=None, vertical=False, with_notes=False, today=None,
+               cover_font=None, cover_color="auto", cover_pattern="waves") -> Path:
     meta = store.load_meta(ncode)
     if meta is None:
         raise FileNotFoundError(f"{ncode} has not been fetched yet")
+    cover.resolve_palette(cover_color, meta.get("biggenre", 2), ncode)   # validate options before any work
+    if cover_pattern not in cover.PATTERNS:
+        raise ValueError(f"invalid cover pattern {cover_pattern!r}: use {' or '.join(cover.PATTERNS)}")
     title, author = meta["title"], meta.get("author", "")
     files: dict[str, str] = {}
     spine: list[str] = []
     cover_bytes = None
-    font = cover.find_font()
+    font = fonts.resolve_font(cover_font or "mincho")
     if font:
         art = store.novel_dir(ncode) / "art.png"
         cover_bytes = cover.cover_jpeg(cover.render_cover(title, author, ncode, meta.get("biggenre", 2),
-                                                          art_path=art if art.exists() else None, font_path=font))
+                                                          art_path=art if art.exists() else None, font=font,
+                                                          color=cover_color, pattern=cover_pattern))
         files["cover.xhtml"] = _xhtml("表紙", '<div class="cover"><img src="cover.jpg" alt="表紙"/></div>',
                                       "<style>html,body{margin:0;padding:0;writing-mode:horizontal-tb}"
                                       "img{display:block;width:100%;height:100vh;object-fit:contain}</style>")
