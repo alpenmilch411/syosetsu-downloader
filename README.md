@@ -62,17 +62,19 @@ The EPUB is written to `data/<ncode>/<title>.epub`.
 
 | Command | What it does |
 |:---|:---|
-| `syosetsu get <ncode\|url> [--epub] [--vertical]` | Fetch (or update) a novel, optionally build the EPUB |
+| `syosetsu get <ncode\|url> [--epub] [--vertical] [cover options]` | Fetch (or update) a novel, optionally build the EPUB |
 | `syosetsu fetch <ncode\|url> [--from N] [--to M] [--refresh]` | Fetch a novel or a chapter range |
 | `syosetsu fetch --list FILE [--export txt\|epub\|both]` | Fetch every novel in a list file, exporting each one as soon as it is complete |
 | `syosetsu export txt <ncode> [--with-notes]` | Write the text exports (see below) |
-| `syosetsu export epub <ncode> [--vertical] [--with-notes] [--out PATH]` | Build the EPUB |
+| `syosetsu export epub <ncode> [--vertical] [--with-notes] [--out PATH] [cover options]` | Build the EPUB |
 | `syosetsu rank [--genre G ...] [--top N] [--status completed\|all] [--out FILE]` | Build a list file from the official ranking API (default: top 10 completed novels in each of the 20 genres) |
 | `syosetsu list` | Show downloaded novels with chapters stored / total |
 
 Global options: `--data DIR` (default `./data`). `fetch` and `get` accept `--interval SECONDS` (default `1.5`, minimum `0.5`).
 
 `--with-notes` includes the author's prefaces and afterwords (前書き / 後書き), which are left out by default.
+
+Cover options: `--cover-font`, `--cover-color`, `--cover-pattern` — see [Covers](#covers). Run any command with `--help` for all options.
 
 ### Downloading many novels
 
