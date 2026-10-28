@@ -9,7 +9,7 @@ GENRES = {101: "異世界〔恋愛〕", 102: "現実世界〔恋愛〕", 201: "�
           301: "純文学", 302: "ヒューマンドラマ", 303: "歴史", 304: "推理", 305: "ホラー", 306: "アクション",
           307: "コメディー", 401: "VRゲーム", 402: "宇宙", 403: "空想科学", 404: "パニック", 9901: "童話",
           9903: "エッセイ", 9904: "リプレイ", 9999: "その他", 9801: "ノンジャンル"}
-STATUS_TYPE = {"completed": "er", "all": "re"}
+STATUS_TYPE = {"completed": "er", "all": "re", "short": "t"}
 
 
 def rank(client: Client, genres=None, top=10, status="completed", order="hyoka") -> list[dict]:

@@ -71,3 +71,18 @@ def test_bad_cover_color_is_a_clean_error(tmp_path, capsys):
     s.write_chapter("n0000aa", 1, "t", ["x"])
     assert cli.main(["--data", str(tmp_path), "export", "epub", "n0000aa", "--cover-color", "nope"]) == 2
     assert "cover color" in capsys.readouterr().err
+
+
+def test_rank_status_short_is_passed_through(tmp_path, monkeypatch):
+    seen = {}
+
+    def fake_rank(client, **kw):
+        seen.update(kw)
+        return []
+
+    monkeypatch.setattr(cli, "Client", lambda **kw: None)
+    monkeypatch.setattr(cli, "rank", fake_rank)
+    out = tmp_path / "l.tsv"
+    assert cli.main(["rank", "--genre", "9901", "--status", "short", "--top", "300", "--out", str(out)]) == 0
+    assert (seen["genres"], seen["status"], seen["top"]) == ([9901], "short", 300)
+    assert "top 300 short per genre" in out.read_text(encoding="utf-8")

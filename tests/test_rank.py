@@ -1,6 +1,7 @@
 import json
 
 import httpx
+import pytest
 
 from syosetsu.client import Client
 from syosetsu.rank import rank, read_list, write_list
@@ -19,6 +20,19 @@ def test_rank_queries_each_genre(fake_clock):
     rows = rank(client, genres=[201, 302], top=5)
     assert seen == [("201", "er", "hyoka", "5"), ("302", "er", "hyoka", "5")]
     assert rows[0] == {"ncode": "n1234ab", "genre": 201, "points": 9, "chapters": 3, "chars": 100, "title": "題 名"}
+
+
+@pytest.mark.parametrize("status,api_type", [("completed", "er"), ("all", "re"), ("short", "t")])
+def test_rank_status_maps_to_api_type(fake_clock, status, api_type):
+    seen = []
+
+    def handler(req):
+        seen.append(req.url.params["type"])
+        return httpx.Response(200, text=json.dumps([{"allcount": 0}]))
+
+    client = Client(transport=httpx.MockTransport(handler), sleep=fake_clock.sleep, clock=fake_clock.clock)
+    assert rank(client, genres=[9901], top=3, status=status) == []
+    assert seen == [api_type]
 
 
 def test_list_round_trip(tmp_path):

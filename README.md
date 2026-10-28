@@ -67,7 +67,7 @@ The EPUB is written to `data/<ncode>/<title>.epub`.
 | `syosetsu fetch --list FILE [--export txt\|epub\|both]` | Fetch every novel in a list file, exporting each one as soon as it is complete |
 | `syosetsu export txt <ncode> [--with-notes]` | Write the text exports (see below) |
 | `syosetsu export epub <ncode> [--vertical] [--with-notes] [--out PATH] [cover options]` | Build the EPUB |
-| `syosetsu rank [--genre G ...] [--top N] [--status completed\|all] [--out FILE]` | Build a list file from the official ranking API (default: top 10 completed novels in each of the 20 genres) |
+| `syosetsu rank [--genre G ...] [--top N] [--status completed\|all\|short] [--out FILE]` | Build a list file from the official ranking API (default: top 10 completed novels in each of the 20 genres; `short` = short stories only) |
 | `syosetsu list` | Show downloaded novels with chapters stored / total |
 
 Global options: `--data DIR` (default `./data`). `fetch` and `get` accept `--interval SECONDS` (default `1.5`, minimum `0.5`).

@@ -64,7 +64,7 @@ def _parser() -> argparse.ArgumentParser:
     r = sub.add_parser("rank", help="build a download list from the rankings")
     r.add_argument("--genre", type=int, action="append", choices=sorted(GENRES))
     r.add_argument("--top", type=int, default=10)
-    r.add_argument("--status", choices=["completed", "all"], default="completed")
+    r.add_argument("--status", choices=["completed", "all", "short"], default="completed")
     r.add_argument("--order", default="hyoka")
     r.add_argument("--out", default=f"lists/top-{date.today().isoformat()}.tsv")
     return p
